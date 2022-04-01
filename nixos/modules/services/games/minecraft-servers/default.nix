@@ -156,7 +156,9 @@ in {
 
     users.groups = eachEnabledInstance (_: _: {});
 
-    networking.firewall.allowedUDPPorts = queryPorts;
-    networking.firewall.allowedTCPPorts = serverPorts ++ queryPorts ++ rconPorts;
+    networking.firewall = mkIf icfg.openFirewall {
+      allowedUDPPorts = queryPorts;
+      allowedTCPPorts = serverPorts ++ queryPorts ++ rconPorts;
+    };
   };
 }

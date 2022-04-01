@@ -8,6 +8,12 @@ in
   options = rec {
     enable = mkEnableOption "Enable minecraft server instance ${name}";
 
+    openFirewall = mkOption {
+      type = with types; bool;
+      default = true;
+      description = "Whether to open the firewall ports automatically.";
+    };
+
     rsyncSSHKeys = mkOption {
       type = with types; listOf str;
       default = [];
