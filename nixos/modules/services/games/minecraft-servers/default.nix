@@ -90,6 +90,15 @@ in {
       (_: v: v.serverConfig.query-port)
         (filterAttrs (_: x: x.serverConfig.enable-query) enabledInstances);
 
+    openFirewallInstances = filterAttrs (_: x: x.openFirewall) enabledInstances;
+    openServerPorts = mapAttrsToList (_: v: v.serverConfig.server-port) openFirewallInstances;
+    openRconPorts = mapAttrsToList
+      (_: v: v.serverConfig.rcon-port)
+        (filterAttrs (_: x: x.serverConfig.enable-rcon) openFirewallInstances);
+    openQueryPorts = mapAttrsToList
+      (_: v: v.serverConfig.query-port)
+        (filterAttrs (_: x: x.serverConfig.enable-query) openFirewallInstances);
+
   in {
     assertions = [
       { assertion = cfg.eula;
@@ -156,9 +165,9 @@ in {
 
     users.groups = eachEnabledInstance (_: _: {});
 
-    networking.firewall = mkIf icfg.openFirewall {
-      allowedUDPPorts = queryPorts;
-      allowedTCPPorts = serverPorts ++ queryPorts ++ rconPorts;
+    networking.firewall = {
+      allowedUDPPorts = openQueryPorts;
+      allowedTCPPorts = openServerPorts ++ openQueryPorts ++ openRconPorts;
     };
   };
 }
