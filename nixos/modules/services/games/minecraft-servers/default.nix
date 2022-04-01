@@ -158,9 +158,7 @@ in {
         createHome = true;
         group = mkInstanceName name;
         home = "/var/lib/${mkInstanceName name}";
-        openssh.authorizedKeys.keys =
-          optionals (icfg.rsyncSSHKeys != [])
-            map (x: rsyncCmd + " " + x) icfg.rsyncSSHKeys;
+        openssh.authorizedKeys.keys = map (x: rsyncCmd + " " + x) icfg.rsyncSSHKeys;
       });
 
     users.groups = eachEnabledInstance (_: _: {});
