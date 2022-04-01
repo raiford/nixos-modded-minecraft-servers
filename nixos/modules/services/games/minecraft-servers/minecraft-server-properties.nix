@@ -49,7 +49,7 @@ with lib;
       '';
     };
     difficulty = mkOption {
-      type = with types; ints.between 0 3;
+      type = with types; oneOf [ (ints.between 0 3) (enum [ "peaceful" "easy" "normal" "hard" ]) ];
       default = 1;
       description = ''
         Defines the difficulty (such as damage dealt by mobs and the way
