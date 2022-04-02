@@ -14,6 +14,12 @@ in
       description = "Whether to open the firewall ports automatically.";
     };
 
+    interface = mkOption {
+      type = with types; nullOr str;
+      default = null;
+      description = "Restricts firewall rules to a specific interface.";
+    };
+
     rsyncSSHKeys = mkOption {
       type = with types; listOf str;
       default = [];

@@ -82,23 +82,31 @@ in {
     # Attrset options
     eachEnabledInstance = f: mapAttrs' (i: c: nameValuePair (mkInstanceName i) (f i c) ) enabledInstances;
 
+    rconEnabled = filterAttrs (_: x: x.serverConfig.enable-rcon) enabledInstances;
+    queryEnabled = filterAttrs (_: x: x.serverConfig.enable-query) enabledInstances;
+
     serverPorts = mapAttrsToList (_: v: v.serverConfig.server-port) enabledInstances;
-    rconPorts = mapAttrsToList
-      (_: v: v.serverConfig.rcon-port)
-        (filterAttrs (_: x: x.serverConfig.enable-rcon) enabledInstances);
-    queryPorts = mapAttrsToList
-      (_: v: v.serverConfig.query-port)
-        (filterAttrs (_: x: x.serverConfig.enable-query) enabledInstances);
+    rconPorts = mapAttrsToList (_: v: v.serverConfig.rcon-port) rconEnabled;
+    queryPorts = mapAttrsToList (_: v: v.serverConfig.query-port) queryEnabled;
 
-    openFirewallInstances = filterAttrs (_: x: x.openFirewall) enabledInstances;
-    openServerPorts = mapAttrsToList (_: v: v.serverConfig.server-port) openFirewallInstances;
-    openRconPorts = mapAttrsToList
+    firewallInstances = filterAttrs (_: x: x.openFirewall && x.interface == null) enabledInstances;
+    firewallServerPorts = mapAttrsToList (_: v: v.serverConfig.server-port) firewallInstances;
+    firewallRconPorts = mapAttrsToList
       (_: v: v.serverConfig.rcon-port)
-        (filterAttrs (_: x: x.serverConfig.enable-rcon) openFirewallInstances);
-    openQueryPorts = mapAttrsToList
+        (filterAttrs (_: x: x.serverConfig.enable-rcon) firewallInstances);
+    firewallQueryPorts = mapAttrsToList
       (_: v: v.serverConfig.query-port)
-        (filterAttrs (_: x: x.serverConfig.enable-query) openFirewallInstances);
+        (filterAttrs (_: x: x.serverConfig.enable-query) firewallInstances);
 
+    interfaceFirewallInstances = (filterAttrs (_: x: x.openFirewall && x.interface != null) enabledInstances);
+    interfacePorts = foldAttrs 
+    (next: prev: { 
+      allowedTCPPorts = [next.serverConfig.server-port] ++ 
+        (if next.serverConfig.enable-rcon then [next.serverConfig.rcon-port] else []) ++ 
+        (if next.serverConfig.enable-query then [next.serverConfig.query-port] else []) ++ prev.allowedTCPPorts; 
+        allowedUDPPorts = (if next.serverConfig.enable-query then [next.serverConfig.query-port] else []) ++ prev.allowedUDPPorts;}) 
+      {allowedTCPPorts = []; allowedUDPPorts = []; }
+      (mapAttrsToList (_: v: { ${v.interface} = v;} ) interfaceFirewallInstances);
   in {
     assertions = [
       { assertion = cfg.eula;
@@ -164,8 +172,10 @@ in {
     users.groups = eachEnabledInstance (_: _: {});
 
     networking.firewall = {
-      allowedUDPPorts = openQueryPorts;
-      allowedTCPPorts = openServerPorts ++ openQueryPorts ++ openRconPorts;
+      allowedUDPPorts = firewallQueryPorts;
+      allowedTCPPorts = firewallServerPorts ++ firewallQueryPorts ++ firewallRconPorts;
     };
+
+    networking.firewall.interfaces = interfacePorts;
   };
 }
