@@ -145,7 +145,7 @@ with lib;
       '';
     };
     gamemode = mkOption {
-      type = with types; ints.between 0 3;
+      type = with types; oneOf [ (ints.between 0 3) (enum [ "survival" "creative" "adventure" "spectator" ]) ];
       default = 0;
       description = ''
         Defines the mode of gameplay.
