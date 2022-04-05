@@ -122,24 +122,36 @@ in {
         message = "Your Minecraft instances have overlapping query ports. They must be unique."; }
     ];
 
-    systemd.services = eachEnabledInstance (name: icfg: {
+    systemd.services = eachEnabledInstance (name: icfg: let
+      fullname = mkInstanceName name;
+    in {
       description   = "Minecraft Server ${name}";
       wantedBy      = [ "multi-user.target" ];
       after         = [ "network.target" ];
 
-      path = with pkgs; [ icfg.jvmPackage bash ];
+      path = with pkgs; [ icfg.jvmPackage bash screen ];
 
       environment.JVMOPTS = icfg.jvmOptString;
 
-      serviceConfig = let
-        fullname = mkInstanceName name;
-      in {
+      serviceConfig = {
         Restart = "always";
-        ExecStart = "/var/lib/${fullname}/start.sh";
+        KillSignal = "SIGCONT"; # this is a no-op initial kill signal since since we send a command to screen
         User = fullname;
         StateDirectory = fullname;
         WorkingDirectory = "/var/lib/${fullname}";
       };
+
+      script = "screen -DmS ${fullname} /var/lib/${fullname}/start.sh";
+      preStop = ''
+        screen -p 0 -S ${fullname} -X eval 'stuff "say SERVER SHUTTING DOWN IN 15 SECONDS..."\015'
+        sleep 5
+        screen -p 0 -S ${fullname} -X eval 'stuff "say SERVER SHUTTING DOWN IN 10 SECONDS..."\015'
+        sleep 5
+        screen -p 0 -S ${fullname} -X eval 'stuff "say SERVER SHUTTING DOWN IN 5 SECONDS..."\015'
+        sleep 5
+        screen -p 0 -S ${fullname} -X eval 'stuff "save-all"\015'
+        screen -p 0 -S ${fullname} -X eval 'stuff "stop"\015'
+        '';
 
       preStart = ''
         # Ensure EULA is accepted
