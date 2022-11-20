@@ -207,7 +207,7 @@ with lib;
     };
     level-type = mkOption {
       type = with types; str;
-      default = "default";
+      default = "minecraft:normal";
       description = ''
         Determines the type of map that is generated.
 
