@@ -7,6 +7,12 @@ in
 {
   options = rec {
     enable = mkEnableOption "Enable minecraft server instance ${name}";
+    
+    serverJar = mkOption {
+      type = with types; nullOr str;
+      default = null;
+      description = "Derivation for the server jar file to use.";
+    };
 
     openFirewall = mkOption {
       type = with types; bool;

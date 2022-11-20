@@ -124,6 +124,14 @@ in {
 
     systemd.services = eachEnabledInstance (name: icfg: let
       fullname = mkInstanceName name;
+      
+      # Server start script.
+      # TODO allow customization of this though instance options.
+      startScript = pkgs.writeShellScript "start.sh"
+        ''
+        set -x
+        exec java -server ''${JVMOPTS[@]} -jar ${icfg.serverJar} --nogui
+        '';
     in {
       description   = "Minecraft Server ${name}";
       wantedBy      = [ "multi-user.target" ];
@@ -141,7 +149,7 @@ in {
         WorkingDirectory = "/var/lib/${fullname}";
       };
 
-      script = "screen -DmS ${fullname} /var/lib/${fullname}/start.sh";
+      script = "screen -DmS ${fullname} ${startScript} ";
       preStop = ''
         screen -p 0 -S ${fullname} -X eval 'stuff "say SERVER SHUTTING DOWN IN 15 SECONDS..."\015'
         sleep 5
